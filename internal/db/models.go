@@ -6,6 +6,7 @@ package db
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -27,6 +28,17 @@ type Task struct {
 	Name      string
 	CreatedAt sql.NullTime
 	UpdatedAt sql.NullTime
+	ProjectID uuid.UUID
+}
+
+type TimeRecord struct {
+	ID        uuid.UUID
+	StartTime time.Time
+	EndTime   time.Time
+	Name      string
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+	TaskID    uuid.UUID
 	ProjectID uuid.UUID
 }
 
