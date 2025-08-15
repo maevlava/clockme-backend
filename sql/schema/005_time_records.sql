@@ -1,0 +1,14 @@
+-- +goose Up
+CREATE TABLE time_records(
+    id UUID PRIMARY KEY UNIQUE NOT NULL,
+    start_time TIMESTAMPTZ NOT NULL,
+    end_time TIMESTAMPTZ NOT NULL,
+    name TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE
+);
+
+-- +goose Down
+DROP TABLE IF EXISTS time_records;
