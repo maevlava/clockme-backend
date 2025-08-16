@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/clockme/clockme-backend/internal/features/projects"
 	"github.com/clockme/clockme-backend/internal/features/tasks"
+	"github.com/clockme/clockme-backend/internal/features/timerecords"
 	"github.com/clockme/clockme-backend/internal/features/users"
 	"github.com/clockme/clockme-backend/internal/shared/config"
 	"github.com/clockme/clockme-backend/internal/shared/db"
@@ -12,28 +13,30 @@ import (
 )
 
 type ClockmeServer struct {
-	Address        string
-	router         *http.ServeMux
-	userHandler    *users.UserHandler
-	projectHandler *projects.ProjectHandler
-	taskHandler    *tasks.TaskHandler
-	cfg            *config.Config
-	db             *db.Queries
+	Address           string
+	router            *http.ServeMux
+	userHandler       *users.UserHandler
+	projectHandler    *projects.ProjectHandler
+	taskHandler       *tasks.TaskHandler
+	timeRecordHandler *timerecords.TimeRecordHandler
+	cfg               *config.Config
+	db                *db.Queries
 }
 
 func NewClockmeServer(cfg *config.Config, db *db.Queries) *ClockmeServer {
 	userHandler := users.NewUserHandler(db)
 	projectHandler := projects.NewProjectHandler(db)
 	taskHandler := tasks.NewTaskHandler(db)
-
+	timeRecordHandler := timerecords.NewTimeRecordHandler(db)
 	c := &ClockmeServer{
-		Address:        ":" + cfg.BackendPort,
-		router:         http.NewServeMux(),
-		cfg:            cfg,
-		db:             db,
-		userHandler:    userHandler,
-		projectHandler: projectHandler,
-		taskHandler:    taskHandler,
+		Address:           ":" + cfg.BackendPort,
+		router:            http.NewServeMux(),
+		cfg:               cfg,
+		db:                db,
+		userHandler:       userHandler,
+		projectHandler:    projectHandler,
+		taskHandler:       taskHandler,
+		timeRecordHandler: timeRecordHandler,
 	}
 
 	c.routes()
@@ -49,4 +52,5 @@ func (c *ClockmeServer) routes() {
 	c.userHandler.RegisterRoutes(c.router, mw)
 	c.projectHandler.RegisterRoutes(c.router, mw)
 	c.taskHandler.RegisterRoutes(c.router, mw)
+	c.timeRecordHandler.RegisterRoutes(c.router, mw)
 }

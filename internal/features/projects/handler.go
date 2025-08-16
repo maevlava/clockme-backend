@@ -4,7 +4,7 @@ import (
 	"encoding/json/v2"
 	"github.com/clockme/clockme-backend/internal/features/users"
 	"github.com/clockme/clockme-backend/internal/shared/common"
-	db2 "github.com/clockme/clockme-backend/internal/shared/db"
+	db "github.com/clockme/clockme-backend/internal/shared/db"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"io"
@@ -12,10 +12,10 @@ import (
 )
 
 type ProjectHandler struct {
-	db *db2.Queries
+	db *db.Queries
 }
 
-func NewProjectHandler(db *db2.Queries) *ProjectHandler {
+func NewProjectHandler(db *db.Queries) *ProjectHandler {
 	return &ProjectHandler{
 		db: db,
 	}
@@ -47,7 +47,7 @@ func (p *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		common.RespondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
-	createParams := db2.CreateProjectParams{
+	createParams := db.CreateProjectParams{
 		ID:   uuid.New(),
 		Name: request.Name,
 	}
@@ -123,7 +123,7 @@ func (p *ProjectHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 		common.RespondWithError(w, http.StatusBadRequest, "Invalid project ID format")
 		return
 	}
-	updateParams := db2.UpdateProjectParams{
+	updateParams := db.UpdateProjectParams{
 		ID:   projectID,
 		Name: request.Name,
 	}
@@ -176,7 +176,7 @@ func (p *ProjectHandler) AddUserToProject(w http.ResponseWriter, r *http.Request
 		common.RespondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
-	addUserToProjectParams := db2.AddUserToProjectParams{
+	addUserToProjectParams := db.AddUserToProjectParams{
 		UserID:    request.UserID,
 		ProjectID: projectID,
 	}
@@ -234,7 +234,7 @@ func (p *ProjectHandler) DeleteUserFromProject(w http.ResponseWriter, r *http.Re
 		log.Error().Err(err).Msg("Failed to parse user ID")
 		common.RespondWithError(w, http.StatusBadRequest, "Invalid user ID format")
 	}
-	deleteUserFromProjectParams := db2.RemoveUserFromProjectParams{
+	deleteUserFromProjectParams := db.RemoveUserFromProjectParams{
 		UserID:    userID,
 		ProjectID: projectID,
 	}

@@ -5,7 +5,7 @@ import (
 	"encoding/json/v2"
 	"github.com/clockme/clockme-backend/internal/features/auth"
 	"github.com/clockme/clockme-backend/internal/shared/common"
-	db2 "github.com/clockme/clockme-backend/internal/shared/db"
+	db "github.com/clockme/clockme-backend/internal/shared/db"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"io"
@@ -13,10 +13,10 @@ import (
 )
 
 type UserHandler struct {
-	db *db2.Queries
+	db *db.Queries
 }
 
-func NewUserHandler(db *db2.Queries) *UserHandler {
+func NewUserHandler(db *db.Queries) *UserHandler {
 	return &UserHandler{
 		db: db,
 	}
@@ -52,7 +52,7 @@ func (u *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		common.RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
-	createParams := db2.CreateUserParams{
+	createParams := db.CreateUserParams{
 		ID:             uuid.New(),
 		Name:           request.Name,
 		Email:          request.Email,
@@ -144,7 +144,7 @@ func (u *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		common.RespondWithError(w, http.StatusBadRequest, "Invalid user ID format")
 		return
 	}
-	updateParams := db2.UpdateUserParams{
+	updateParams := db.UpdateUserParams{
 		ID:    userID,
 		Name:  request.Name,
 		Email: request.Email,

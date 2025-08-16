@@ -4,10 +4,9 @@ INSERT INTO time_records (
     name,
     start_time,
     end_time,
-    task_id,
-    project_id
+    task_id
 ) VALUES (
-             $1, $2, $3, $4, $5, $6
+             $1, $2, $3, $4, $5
          )
 RETURNING *;
 
@@ -38,13 +37,15 @@ WHERE task_id = $1
 ORDER BY created_at;
 
 -- name: ListTimeRecordsForProject :many
-SELECT * FROM time_records
-WHERE project_id = $1
-ORDER BY created_at;
+SELECT tr.* FROM time_records AS tr
+                     JOIN tasks AS t ON tr.task_id = t.id
+WHERE t.project_id = $1
+ORDER BY tr.created_at;
 
 -- name: ListTimeRecordsForUser :many
 SELECT tr.*
 FROM time_records AS tr
-JOIN projects_users AS pu ON tr.project_id = pu.project_id
+         JOIN tasks AS t ON tr.task_id = t.id
+         JOIN projects_users AS pu ON t.project_id = pu.project_id
 WHERE pu.user_id = $1
 ORDER BY tr.created_at;

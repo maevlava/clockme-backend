@@ -39,6 +39,10 @@ tasks:
     cmds:
       - goose -dir ./sql/schema postgres "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5433/${POSTGRES_DB}?sslmode=disable" down
 
+  migrate:reset:
+    cmds:
+      - goose -dir ./sql/schema postgres "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5433/${POSTGRES_DB}?sslmode=disable" down-to 0
+
   db:psql:
     desc: "Connect to the PostgreSQL database"
     deps: [ up ]

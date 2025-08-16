@@ -3,7 +3,7 @@ package tasks
 import (
 	"encoding/json/v2"
 	"github.com/clockme/clockme-backend/internal/shared/common"
-	db2 "github.com/clockme/clockme-backend/internal/shared/db"
+	"github.com/clockme/clockme-backend/internal/shared/db"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"io"
@@ -11,10 +11,10 @@ import (
 )
 
 type TaskHandler struct {
-	db *db2.Queries
+	db *db.Queries
 }
 
-func NewTaskHandler(db *db2.Queries) *TaskHandler {
+func NewTaskHandler(db *db.Queries) *TaskHandler {
 	return &TaskHandler{
 		db: db,
 	}
@@ -52,7 +52,7 @@ func (t *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createParams := db2.CreateTaskParams{
+	createParams := db.CreateTaskParams{
 		ID:        uuid.New(),
 		ProjectID: projectID,
 		Name:      request.Name,
@@ -138,7 +138,7 @@ func (t *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updateParams := db2.UpdateTaskParams{
+	updateParams := db.UpdateTaskParams{
 		ID:        task.ID,
 		ProjectID: task.ProjectID,
 		Name:      request.Name,

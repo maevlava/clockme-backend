@@ -18,12 +18,11 @@ INSERT INTO time_records (
     name,
     start_time,
     end_time,
-    task_id,
-    project_id
+    task_id
 ) VALUES (
-             $1, $2, $3, $4, $5, $6
+             $1, $2, $3, $4, $5
          )
-RETURNING id, start_time, end_time, name, created_at, updated_at, task_id, project_id
+RETURNING id, start_time, end_time, name, created_at, updated_at, task_id
 `
 
 type CreateTimeRecordParams struct {
@@ -32,7 +31,6 @@ type CreateTimeRecordParams struct {
 	StartTime time.Time
 	EndTime   time.Time
 	TaskID    uuid.UUID
-	ProjectID uuid.UUID
 }
 
 func (q *Queries) CreateTimeRecord(ctx context.Context, arg CreateTimeRecordParams) (TimeRecord, error) {
@@ -42,7 +40,6 @@ func (q *Queries) CreateTimeRecord(ctx context.Context, arg CreateTimeRecordPara
 		arg.StartTime,
 		arg.EndTime,
 		arg.TaskID,
-		arg.ProjectID,
 	)
 	var i TimeRecord
 	err := row.Scan(
@@ -53,7 +50,6 @@ func (q *Queries) CreateTimeRecord(ctx context.Context, arg CreateTimeRecordPara
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.TaskID,
-		&i.ProjectID,
 	)
 	return i, err
 }
@@ -69,7 +65,7 @@ func (q *Queries) DeleteTimeRecord(ctx context.Context, id uuid.UUID) error {
 }
 
 const getAllTimeRecords = `-- name: GetAllTimeRecords :many
-SELECT id, start_time, end_time, name, created_at, updated_at, task_id, project_id FROM time_records
+SELECT id, start_time, end_time, name, created_at, updated_at, task_id FROM time_records
 `
 
 func (q *Queries) GetAllTimeRecords(ctx context.Context) ([]TimeRecord, error) {
@@ -89,7 +85,6 @@ func (q *Queries) GetAllTimeRecords(ctx context.Context) ([]TimeRecord, error) {
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.TaskID,
-			&i.ProjectID,
 		); err != nil {
 			return nil, err
 		}
@@ -105,7 +100,7 @@ func (q *Queries) GetAllTimeRecords(ctx context.Context) ([]TimeRecord, error) {
 }
 
 const getTimeRecord = `-- name: GetTimeRecord :one
-SELECT id, start_time, end_time, name, created_at, updated_at, task_id, project_id FROM time_records
+SELECT id, start_time, end_time, name, created_at, updated_at, task_id FROM time_records
 WHERE id = $1
 `
 
@@ -120,15 +115,15 @@ func (q *Queries) GetTimeRecord(ctx context.Context, id uuid.UUID) (TimeRecord, 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.TaskID,
-		&i.ProjectID,
 	)
 	return i, err
 }
 
 const listTimeRecordsForProject = `-- name: ListTimeRecordsForProject :many
-SELECT id, start_time, end_time, name, created_at, updated_at, task_id, project_id FROM time_records
-WHERE project_id = $1
-ORDER BY created_at
+SELECT tr.id, tr.start_time, tr.end_time, tr.name, tr.created_at, tr.updated_at, tr.task_id FROM time_records AS tr
+                     JOIN tasks AS t ON tr.task_id = t.id
+WHERE t.project_id = $1
+ORDER BY tr.created_at
 `
 
 func (q *Queries) ListTimeRecordsForProject(ctx context.Context, projectID uuid.UUID) ([]TimeRecord, error) {
@@ -148,7 +143,6 @@ func (q *Queries) ListTimeRecordsForProject(ctx context.Context, projectID uuid.
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.TaskID,
-			&i.ProjectID,
 		); err != nil {
 			return nil, err
 		}
@@ -164,7 +158,7 @@ func (q *Queries) ListTimeRecordsForProject(ctx context.Context, projectID uuid.
 }
 
 const listTimeRecordsForTask = `-- name: ListTimeRecordsForTask :many
-SELECT id, start_time, end_time, name, created_at, updated_at, task_id, project_id FROM time_records
+SELECT id, start_time, end_time, name, created_at, updated_at, task_id FROM time_records
 WHERE task_id = $1
 ORDER BY created_at
 `
@@ -186,7 +180,6 @@ func (q *Queries) ListTimeRecordsForTask(ctx context.Context, taskID uuid.UUID) 
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.TaskID,
-			&i.ProjectID,
 		); err != nil {
 			return nil, err
 		}
@@ -202,9 +195,10 @@ func (q *Queries) ListTimeRecordsForTask(ctx context.Context, taskID uuid.UUID) 
 }
 
 const listTimeRecordsForUser = `-- name: ListTimeRecordsForUser :many
-SELECT tr.id, tr.start_time, tr.end_time, tr.name, tr.created_at, tr.updated_at, tr.task_id, tr.project_id
+SELECT tr.id, tr.start_time, tr.end_time, tr.name, tr.created_at, tr.updated_at, tr.task_id
 FROM time_records AS tr
-JOIN projects_users AS pu ON tr.project_id = pu.project_id
+         JOIN tasks AS t ON tr.task_id = t.id
+         JOIN projects_users AS pu ON t.project_id = pu.project_id
 WHERE pu.user_id = $1
 ORDER BY tr.created_at
 `
@@ -226,7 +220,6 @@ func (q *Queries) ListTimeRecordsForUser(ctx context.Context, userID uuid.UUID) 
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.TaskID,
-			&i.ProjectID,
 		); err != nil {
 			return nil, err
 		}
@@ -249,7 +242,7 @@ SET
     end_time = $4,
     updated_at = now()
 WHERE id = $1
-RETURNING id, start_time, end_time, name, created_at, updated_at, task_id, project_id
+RETURNING id, start_time, end_time, name, created_at, updated_at, task_id
 `
 
 type UpdateTimeRecordParams struct {
@@ -275,7 +268,6 @@ func (q *Queries) UpdateTimeRecord(ctx context.Context, arg UpdateTimeRecordPara
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.TaskID,
-		&i.ProjectID,
 	)
 	return i, err
 }

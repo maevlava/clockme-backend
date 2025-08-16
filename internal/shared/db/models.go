@@ -39,7 +39,6 @@ type TimeRecord struct {
 	CreatedAt sql.NullTime
 	UpdatedAt sql.NullTime
 	TaskID    uuid.UUID
-	ProjectID uuid.UUID
 }
 
 type User struct {
