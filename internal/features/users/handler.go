@@ -3,9 +3,9 @@ package users
 import (
 	"context"
 	"encoding/json/v2"
-	"github.com/clockme/clockme-backend/internal/auth"
-	"github.com/clockme/clockme-backend/internal/common"
-	"github.com/clockme/clockme-backend/internal/db"
+	"github.com/clockme/clockme-backend/internal/features/auth"
+	"github.com/clockme/clockme-backend/internal/shared/common"
+	db2 "github.com/clockme/clockme-backend/internal/shared/db"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"io"
@@ -13,14 +13,22 @@ import (
 )
 
 type UserHandler struct {
-	db *db.Queries
+	db *db2.Queries
 }
 
-func NewUserHandler(db *db.Queries) *UserHandler {
+func NewUserHandler(db *db2.Queries) *UserHandler {
 	return &UserHandler{
 		db: db,
 	}
 }
+func (u *UserHandler) RegisterRoutes(router *http.ServeMux, mw func(http.Handler) http.Handler) {
+	router.Handle("POST /api/v1/users", mw(http.HandlerFunc(u.CreateUser)))
+	router.Handle("GET /api/v1/users", mw(http.HandlerFunc(u.GetUsers)))
+	router.Handle("GET /api/v1/users/{userID}", mw(http.HandlerFunc(u.GetUser)))
+	router.Handle("PUT /api/v1/users/{userID}", mw(http.HandlerFunc(u.UpdateUser)))
+	router.Handle("DELETE /api/v1/users/{userID}", mw(http.HandlerFunc(u.DeleteUser)))
+}
+
 func (u *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -44,7 +52,7 @@ func (u *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		common.RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
-	createParams := db.CreateUserParams{
+	createParams := db2.CreateUserParams{
 		ID:             uuid.New(),
 		Name:           request.Name,
 		Email:          request.Email,
@@ -101,6 +109,8 @@ func (u *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	user, err := u.db.GetUser(ctx, userID)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get user from database")
+		common.RespondWithError(w, http.StatusInternalServerError, "Internal server error")
+		return
 	}
 
 	response := UserResponse{
@@ -134,7 +144,7 @@ func (u *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		common.RespondWithError(w, http.StatusBadRequest, "Invalid user ID format")
 		return
 	}
-	updateParams := db.UpdateUserParams{
+	updateParams := db2.UpdateUserParams{
 		ID:    userID,
 		Name:  request.Name,
 		Email: request.Email,

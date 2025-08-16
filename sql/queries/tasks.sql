@@ -34,3 +34,9 @@ DELETE FROM tasks;
 SELECT * FROM tasks
 WHERE project_id = $1
 ORDER BY created_at;
+
+-- name: ListTaskForUser :many
+SELECT t.* FROM tasks AS t
+JOIN projects_users AS pu ON pu.project_id = t.project_id
+WHERE pu.user_id = $1
+ORDER BY created_at;

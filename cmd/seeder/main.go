@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"github.com/clockme/clockme-backend/internal/auth"
-	"github.com/clockme/clockme-backend/internal/db"
-	"github.com/clockme/clockme-backend/internal/logger"
+	"github.com/clockme/clockme-backend/internal/features/auth"
+	db2 "github.com/clockme/clockme-backend/internal/shared/db"
+	"github.com/clockme/clockme-backend/internal/shared/logger"
 	"github.com/go-faker/faker/v4"
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
@@ -71,7 +71,7 @@ type TaskInfo struct {
 	ProjectID uuid.UUID
 }
 
-func connectDB() (*sql.DB, *db.Queries) {
+func connectDB() (*sql.DB, *db2.Queries) {
 	ctxBg := context.Background()
 
 	dbSource := os.Getenv("DB_SOURCE")
@@ -92,11 +92,11 @@ func connectDB() (*sql.DB, *db.Queries) {
 
 	log.Info().Msg("Successfully connected to the database!")
 
-	queries := db.New(conn)
+	queries := db2.New(conn)
 
 	return conn, queries
 }
-func seedUsers(queries *db.Queries, ctxBg context.Context) []uuid.UUID {
+func seedUsers(queries *db2.Queries, ctxBg context.Context) []uuid.UUID {
 	var userIDs []uuid.UUID
 
 	for i := 0; i < 3; i++ {
@@ -104,7 +104,7 @@ func seedUsers(queries *db.Queries, ctxBg context.Context) []uuid.UUID {
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to create user")
 		}
-		newUser, err := queries.CreateUser(ctxBg, db.CreateUserParams{
+		newUser, err := queries.CreateUser(ctxBg, db2.CreateUserParams{
 			ID:             uuid.New(),
 			Name:           faker.Name(),
 			HashedPassword: hashedPassword,
@@ -123,11 +123,11 @@ func seedUsers(queries *db.Queries, ctxBg context.Context) []uuid.UUID {
 	}
 	return userIDs
 }
-func seedProjects(queries *db.Queries, ctxBg context.Context) []uuid.UUID {
+func seedProjects(queries *db2.Queries, ctxBg context.Context) []uuid.UUID {
 	var projectIDs []uuid.UUID
 
 	for i := 0; i < 3; i++ {
-		newProject, err := queries.CreateProject(ctxBg, db.CreateProjectParams{
+		newProject, err := queries.CreateProject(ctxBg, db2.CreateProjectParams{
 			ID:   uuid.New(),
 			Name: faker.Name(),
 		})
@@ -143,7 +143,7 @@ func seedProjects(queries *db.Queries, ctxBg context.Context) []uuid.UUID {
 	}
 	return projectIDs
 }
-func seedProjectsUsers(queries *db.Queries, ctxBg context.Context, userIDs []uuid.UUID, projectIDs []uuid.UUID) {
+func seedProjectsUsers(queries *db2.Queries, ctxBg context.Context, userIDs []uuid.UUID, projectIDs []uuid.UUID) {
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -158,7 +158,7 @@ func seedProjectsUsers(queries *db.Queries, ctxBg context.Context, userIDs []uui
 
 		for i := 0; i < numUserToAdd; i++ {
 			userID := userIDs[i]
-			_, err := queries.AddUserToProject(ctxBg, db.AddUserToProjectParams{
+			_, err := queries.AddUserToProject(ctxBg, db2.AddUserToProjectParams{
 				UserID:    userID,
 				ProjectID: projectID,
 			})
@@ -177,7 +177,7 @@ func seedProjectsUsers(queries *db.Queries, ctxBg context.Context, userIDs []uui
 		}
 	}
 }
-func seedTasks(queries *db.Queries, ctxBg context.Context) []uuid.UUID {
+func seedTasks(queries *db2.Queries, ctxBg context.Context) []uuid.UUID {
 	var taskIDs []uuid.UUID
 
 	projectIDs, err := getAllProjectIDs(queries, ctxBg)
@@ -191,7 +191,7 @@ func seedTasks(queries *db.Queries, ctxBg context.Context) []uuid.UUID {
 
 		randomProjectID := projectIDs[randomIndex]
 
-		newTask, err := queries.CreateTask(ctxBg, db.CreateTaskParams{
+		newTask, err := queries.CreateTask(ctxBg, db2.CreateTaskParams{
 			ID:        uuid.New(),
 			Name:      faker.Sentence(),
 			ProjectID: randomProjectID,
@@ -209,7 +209,7 @@ func seedTasks(queries *db.Queries, ctxBg context.Context) []uuid.UUID {
 
 	return taskIDs
 }
-func seedTimeRecords(queries *db.Queries, ctxBg context.Context) []uuid.UUID {
+func seedTimeRecords(queries *db2.Queries, ctxBg context.Context) []uuid.UUID {
 	var timeRecordsIDs []uuid.UUID
 
 	tasksInfo, err := getAllTasksInfo(queries, ctxBg)
@@ -232,7 +232,7 @@ func seedTimeRecords(queries *db.Queries, ctxBg context.Context) []uuid.UUID {
 		maxDurationInSeconds := 6 * 60 * 60
 		randomDurationInSeconds := r.Intn(maxDurationInSeconds-minDurationInSeconds) + minDurationInSeconds
 		endTime := startTime.Add(time.Second * time.Duration(randomDurationInSeconds))
-		params := db.CreateTimeRecordParams{
+		params := db2.CreateTimeRecordParams{
 			ID:        uuid.New(),
 			Name:      faker.Sentence(),
 			StartTime: startTime,
@@ -255,7 +255,7 @@ func seedTimeRecords(queries *db.Queries, ctxBg context.Context) []uuid.UUID {
 	return timeRecordsIDs
 
 }
-func getAllUserIDs(queries *db.Queries, ctxBg context.Context) ([]uuid.UUID, error) {
+func getAllUserIDs(queries *db2.Queries, ctxBg context.Context) ([]uuid.UUID, error) {
 	users, err := queries.GetAllUsers(ctxBg)
 	if err != nil {
 		return nil, err
@@ -267,7 +267,7 @@ func getAllUserIDs(queries *db.Queries, ctxBg context.Context) ([]uuid.UUID, err
 	}
 	return userIDs, nil
 }
-func getAllProjectIDs(queries *db.Queries, ctxBg context.Context) ([]uuid.UUID, error) {
+func getAllProjectIDs(queries *db2.Queries, ctxBg context.Context) ([]uuid.UUID, error) {
 	projects, err := queries.GetAllProjects(ctxBg)
 	if err != nil {
 		return nil, err
@@ -279,7 +279,7 @@ func getAllProjectIDs(queries *db.Queries, ctxBg context.Context) ([]uuid.UUID, 
 	}
 	return projectIDs, nil
 }
-func getAllTasksInfo(queries *db.Queries, ctxBg context.Context) ([]TaskInfo, error) {
+func getAllTasksInfo(queries *db2.Queries, ctxBg context.Context) ([]TaskInfo, error) {
 	tasks, err := queries.GetAllTasks(ctxBg)
 	if err != nil {
 		return nil, err
