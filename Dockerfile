@@ -8,7 +8,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /app/server ./cmd/api
+RUN CGO_ENABLED=0 GOOS=linux GOEXPERIMENT=jsonv2 go build -a -installsuffix cgo -o /app/server ./cmd/api
 
 FROM alpine:latest
 

@@ -1,13 +1,13 @@
 package common
 
 import (
-	"encoding/json"
+	jsonv2 "encoding/json/v2"
 	"github.com/rs/zerolog/log"
 	"net/http"
 )
 
 func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
-	response, err := json.Marshal(payload)
+	response, err := jsonv2.Marshal(payload)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to marshal JSON")
 		w.WriteHeader(http.StatusInternalServerError)
