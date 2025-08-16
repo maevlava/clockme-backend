@@ -37,6 +37,18 @@ func (c *ClockmeServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (c *ClockmeServer) routes() {
 
 	// Users
-	getUsersHandler := http.HandlerFunc(c.userHandler.GetUsersHandler)
-	c.router.Handle("GET /users", middleware.EnableCORS(getUsersHandler))
+	createUserHandler := http.HandlerFunc(c.userHandler.CreateUser)
+	c.router.Handle("POST /api/v1/users", middleware.EnableCORS(createUserHandler))
+
+	getAllUsersHandler := http.HandlerFunc(c.userHandler.GetUsers)
+	c.router.Handle("GET /api/v1/users", middleware.EnableCORS(getAllUsersHandler))
+
+	getUserHandler := http.HandlerFunc(c.userHandler.GetUser)
+	c.router.Handle("GET /api/v1/users/{userID}", middleware.EnableCORS(getUserHandler))
+
+	updateUserHandler := http.HandlerFunc(c.userHandler.UpdateUser)
+	c.router.Handle("PUT /api/v1/users/{userID}", middleware.EnableCORS(updateUserHandler))
+
+	deleteUserHandler := http.HandlerFunc(c.userHandler.DeleteUser)
+	c.router.Handle("DELETE /api/v1/users/{userID}", middleware.EnableCORS(deleteUserHandler))
 }
