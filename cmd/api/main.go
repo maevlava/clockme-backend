@@ -9,6 +9,7 @@ import (
 	"github.com/clockme/clockme-backend/internal/server"
 	"github.com/rs/zerolog/log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"time"
 )
