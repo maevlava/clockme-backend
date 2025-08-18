@@ -5,7 +5,6 @@
 package db
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,8 +13,8 @@ import (
 type Project struct {
 	ID        uuid.UUID
 	Name      string
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type ProjectsUser struct {
@@ -26,8 +25,8 @@ type ProjectsUser struct {
 type Task struct {
 	ID        uuid.UUID
 	Name      string
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
+	CreatedAt time.Time
+	UpdatedAt time.Time
 	ProjectID uuid.UUID
 }
 
@@ -36,8 +35,8 @@ type TimeRecord struct {
 	StartTime time.Time
 	EndTime   time.Time
 	Name      string
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
+	CreatedAt time.Time
+	UpdatedAt time.Time
 	TaskID    uuid.UUID
 }
 
@@ -46,6 +45,6 @@ type User struct {
 	HashedPassword string
 	Name           string
 	Email          string
-	CreatedAt      sql.NullTime
-	UpdatedAt      sql.NullTime
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }

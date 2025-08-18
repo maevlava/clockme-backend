@@ -2,7 +2,9 @@ package users
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json/v2"
+	"errors"
 	"github.com/clockme/clockme-backend/internal/features/auth"
 	"github.com/clockme/clockme-backend/internal/shared/common"
 	db "github.com/clockme/clockme-backend/internal/shared/db"
@@ -12,13 +14,20 @@ import (
 	"net/http"
 )
 
+type UserStore interface {
+	GetUser(ctx context.Context, userID uuid.UUID) (db.User, error)
+	CreateUser(ctx context.Context, createParams db.CreateUserParams) (db.User, error)
+	UpdateUser(ctx context.Context, updateParams db.UpdateUserParams) (db.User, error)
+	DeleteUser(ctx context.Context, userID uuid.UUID) error
+	GetAllUsers(ctx context.Context) ([]db.User, error)
+}
 type UserHandler struct {
-	db *db.Queries
+	store UserStore
 }
 
-func NewUserHandler(db *db.Queries) *UserHandler {
+func NewUserHandler(store UserStore) *UserHandler {
 	return &UserHandler{
-		db: db,
+		store: store,
 	}
 }
 func (u *UserHandler) RegisterRoutes(router *http.ServeMux, mw func(http.Handler) http.Handler) {
@@ -58,7 +67,7 @@ func (u *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		Email:          request.Email,
 		HashedPassword: hashedPassword,
 	}
-	newUser, err := u.db.CreateUser(ctx, createParams)
+	newUser, err := u.store.CreateUser(ctx, createParams)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to create user in database")
 		common.RespondWithError(w, http.StatusInternalServerError, "Internal server error")
@@ -69,8 +78,8 @@ func (u *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		ID:        newUser.ID,
 		Name:      newUser.Name,
 		Email:     newUser.Email,
-		CreatedAt: newUser.CreatedAt.Time,
-		UpdatedAt: newUser.UpdatedAt.Time,
+		CreatedAt: newUser.CreatedAt,
+		UpdatedAt: newUser.UpdatedAt,
 	}
 	common.RespondWithJSON(w, http.StatusCreated, response)
 }
@@ -78,17 +87,24 @@ func (u *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	var usersResponse []UserResponse
 
-	users, err := u.db.GetAllUsers(ctx)
+	users, err := u.store.GetAllUsers(ctx)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Info().Msg("No users found in database")
+			common.RespondWithError(w, http.StatusNotFound, "No users found")
+			return
+		}
 		log.Error().Err(err).Msg("Failed to get users from database")
+		common.RespondWithError(w, http.StatusInternalServerError, "Internal server error")
+		return
 	}
 	for _, user := range users {
 		userResponse := UserResponse{
 			ID:        user.ID,
 			Name:      user.Name,
 			Email:     user.Email,
-			CreatedAt: user.CreatedAt.Time,
-			UpdatedAt: user.UpdatedAt.Time,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
 		}
 		usersResponse = append(usersResponse, userResponse)
 	}
@@ -106,9 +122,14 @@ func (u *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := u.db.GetUser(ctx, userID)
+	user, err := u.store.GetUser(ctx, userID)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to get user from database")
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Info().Str("userID", userID.String()).Msg("User not found in database")
+			common.RespondWithError(w, http.StatusNotFound, "User not found")
+			return
+		}
+		log.Error().Err(err).Str("userID", userID.String()).Msg("Failed to get user from database")
 		common.RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -117,8 +138,8 @@ func (u *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		ID:        user.ID,
 		Name:      user.Name,
 		Email:     user.Email,
-		CreatedAt: user.CreatedAt.Time,
-		UpdatedAt: user.UpdatedAt.Time,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 	}
 
 	common.RespondWithJSON(w, http.StatusOK, response)
@@ -149,9 +170,14 @@ func (u *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		Name:  request.Name,
 		Email: request.Email,
 	}
-	updatedUser, err := u.db.UpdateUser(ctx, updateParams)
+	updatedUser, err := u.store.UpdateUser(ctx, updateParams)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to update user in database")
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Info().Str("userID", userID.String()).Msg("User not found in database")
+			common.RespondWithError(w, http.StatusNotFound, "User not found")
+			return
+		}
+		log.Error().Err(err).Str("userID", userID.String()).Msg("Failed to update from database")
 		common.RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -167,15 +193,21 @@ func (u *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	idString := r.PathValue("userID")
 	userID, err := uuid.Parse(idString)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to parse user ID")
 		common.RespondWithError(w, http.StatusBadRequest, "Invalid user ID format")
 		return
 	}
-	err = u.db.DeleteUser(ctx, userID)
+
+	err = u.store.DeleteUser(ctx, userID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			common.RespondWithError(w, http.StatusNotFound, "User not found")
+			return
+		}
+
 		log.Error().Err(err).Msg("Failed to delete user from database")
 		common.RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
-	common.RespondWithJSON(w, http.StatusOK, map[string]string{"message": "User deleted successfully"})
+
+	w.WriteHeader(http.StatusNoContent)
 }

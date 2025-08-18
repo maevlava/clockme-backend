@@ -211,8 +211,8 @@ func (p *ProjectHandler) GetUsersInProject(w http.ResponseWriter, r *http.Reques
 			ID:        user.ID,
 			Name:      user.Name,
 			Email:     user.Email,
-			CreatedAt: user.CreatedAt.Time,
-			UpdatedAt: user.UpdatedAt.Time,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
 		}
 		usersResponse = append(usersResponse, userResponse)
 	}
